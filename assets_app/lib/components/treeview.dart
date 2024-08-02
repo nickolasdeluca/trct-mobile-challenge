@@ -36,27 +36,76 @@ class TreeView extends StatelessWidget {
   }
 }
 
-void analyzeNode(
-    {required TreeNode node, required Asset asset, required List destination}) {
-  if (node.children.isEmpty) {
-    if (node.data.id == asset.parentId) {
-      node.children.add(node);
-    } else {
-      return;
-    }
-  } else {
-    for (TreeNode child in node.children) {
-      if (child.data.id == asset.parentId) {
-        child.children.add(
-          TreeNode(
-            data: asset,
-            children: [],
-          ),
-        );
-        return;
+bool analyzeNode({
+  required TreeNode currentNode,
+  required Asset asset,
+  required List destination,
+}) {
+  bool found = false;
+
+  if ((currentNode.data.id == asset.parentId) ||
+      (currentNode.data.id == asset.locationId)) {
+    currentNode.children.add(TreeNode(data: asset, children: []));
+    found = true;
+  }
+
+  if ((!found) && (currentNode.children.isNotEmpty)) {
+    for (TreeNode child in currentNode.children) {
+      if ((child.data.id == asset.parentId) ||
+          (child.data.id == asset.locationId)) {
+        child.children.add(TreeNode(data: asset, children: []));
+
+        found = true;
+        break;
       } else {
-        analyzeNode(node: child, asset: asset, destination: destination);
+        found = analyzeNode(
+          currentNode: child,
+          asset: asset,
+          destination: destination,
+        );
+
+        if (found) {
+          break;
+        }
       }
     }
+  }
+
+  return found;
+}
+
+void fillTree({
+  required List<Asset> source,
+  required List<TreeNode> destination,
+}) {
+  List<Asset> sideList = [];
+
+  for (Asset asset in source) {
+    bool found = false;
+
+    if (asset.parentId == null && asset.locationId == null) {
+      destination.add(TreeNode(data: asset, children: []));
+      continue;
+    }
+
+    for (TreeNode node in destination) {
+      found = analyzeNode(
+        currentNode: node,
+        asset: asset,
+        destination: destination,
+      );
+
+      if (found) {
+        break;
+      }
+    }
+
+    if (!found) {
+      sideList.add(asset);
+    }
+  }
+
+  if (sideList.isNotEmpty) {
+    fillTree(source: sideList, destination: destination);
   }
 }

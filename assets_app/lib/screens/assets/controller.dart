@@ -27,29 +27,7 @@ Future<bool> getAssets({required String companyId}) async {
       locations.add(Asset.fromJson(object));
     }
 
-    for (Asset location
-        in locations.where((element) => element.parentId == null)) {
-      treeData.add(
-        TreeNode(
-          data: location,
-          children: [],
-        ),
-      );
-    }
-
-    for (Asset location
-        in locations.where((element) => element.parentId != null)) {
-      TreeNode parent = treeData.firstWhere(
-        (element) => element.data.id == location.parentId,
-      );
-
-      parent.children.add(
-        TreeNode(
-          data: location,
-          children: [],
-        ),
-      );
-    }
+    fillTree(source: locations, destination: treeData);
 
     locations.clear();
   }
@@ -65,52 +43,9 @@ Future<bool> getAssets({required String companyId}) async {
       assets.add(Asset.fromJson(object));
     }
 
-    for (Asset asset in assets.where((element) => element.parentId == null)) {
-      if (asset.locationId != null) {
-        bool found = false;
-        for (TreeNode node in treeData) {
-          if (node.children.isNotEmpty) {
-            for (TreeNode child in node.children) {
-              if (child.data.id == asset.locationId) {
-                child.children.add(
-                  TreeNode(
-                    data: asset,
-                    children: [],
-                  ),
-                );
+    fillTree(source: assets, destination: treeData);
 
-                found = true;
-              }
-            }
-          }
-
-          if ((!found) && (node.data.id == asset.locationId)) {
-            node.children.add(
-              TreeNode(
-                data: asset,
-                children: [],
-              ),
-            );
-          }
-        }
-      }
-    }
-
-    for (Asset asset in assets.where((element) => element.parentId != null)) {
-      for (TreeNode node in treeData) {
-        analyzeNode(node: node, asset: asset, destination: node.children);
-      }
-    }
-
-    for (Asset asset in assets.where(
-        (element) => element.parentId == null && element.locationId == null)) {
-      treeData.add(
-        TreeNode(
-          data: asset,
-          children: [],
-        ),
-      );
-    }
+    assets.clear();
   }
 
   return true;

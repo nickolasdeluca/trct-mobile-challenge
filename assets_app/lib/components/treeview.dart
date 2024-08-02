@@ -36,42 +36,31 @@ class TreeView extends StatelessWidget {
   }
 }
 
+bool isParentOrLocationMatch(TreeNode node, Asset asset) {
+  return node.data.id == asset.parentId || node.data.id == asset.locationId;
+}
+
 bool analyzeNode({
   required TreeNode currentNode,
   required Asset asset,
-  required List destination,
+  required List<TreeNode> destination,
 }) {
-  bool found = false;
-
-  if ((currentNode.data.id == asset.parentId) ||
-      (currentNode.data.id == asset.locationId)) {
+  if (isParentOrLocationMatch(currentNode, asset)) {
     currentNode.children.add(TreeNode(data: asset, children: []));
-    found = true;
+    return true;
   }
 
-  if ((!found) && (currentNode.children.isNotEmpty)) {
-    for (TreeNode child in currentNode.children) {
-      if ((child.data.id == asset.parentId) ||
-          (child.data.id == asset.locationId)) {
-        child.children.add(TreeNode(data: asset, children: []));
-
-        found = true;
-        break;
-      } else {
-        found = analyzeNode(
-          currentNode: child,
-          asset: asset,
-          destination: destination,
-        );
-
-        if (found) {
-          break;
-        }
-      }
+  for (TreeNode child in currentNode.children) {
+    if (analyzeNode(
+      currentNode: child,
+      asset: asset,
+      destination: destination,
+    )) {
+      return true;
     }
   }
 
-  return found;
+  return false;
 }
 
 void fillTree({

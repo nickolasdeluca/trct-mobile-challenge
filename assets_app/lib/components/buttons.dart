@@ -37,10 +37,10 @@ class _ToggleButtonState extends State<ToggleButton> {
         });
       },
       style: ButtonStyle(
-        backgroundColor: MaterialStateProperty.all<Color>(
+        backgroundColor: WidgetStateProperty.all<Color>(
           toggled ? Palette.chefchaouenBlue : Colors.white,
         ),
-        shape: MaterialStateProperty.all<RoundedRectangleBorder>(
+        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(5),
           ),

@@ -1,6 +1,7 @@
 import 'package:assets_app/components/appbar.dart';
 import 'package:assets_app/components/buttons.dart';
 import 'package:assets_app/components/inputs.dart';
+import 'package:assets_app/components/treeview.dart';
 import 'package:assets_app/models/companies.dart';
 import 'package:assets_app/screens/assets/controller.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +42,31 @@ class _CompanyAssetsState extends State<CompanyAssets> {
                     label: 'Crítico',
                   ),
                 ],
+              ),
+              const Divider(),
+              Expanded(
+                child: FutureBuilder(
+                  future: getAssets(companyId: widget.company.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.done) {
+                      if (snapshot.hasData) {
+                        return TreeView(data: treeData);
+                      } else if (snapshot.hasError) {
+                        return Center(
+                          child: Text('Error: ${snapshot.error}'),
+                        );
+                      } else {
+                        return const Center(
+                          child: Text('Nenhum ativo encontrado'),
+                        );
+                      }
+                    } else {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                  },
+                ),
               ),
             ],
           ),

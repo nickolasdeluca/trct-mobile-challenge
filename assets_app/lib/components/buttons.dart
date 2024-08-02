@@ -26,12 +26,6 @@ class _ToggleButtonState extends State<ToggleButton> {
     _controller = widget.controller;
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
   bool get toggled => _controller.value;
 
   @override

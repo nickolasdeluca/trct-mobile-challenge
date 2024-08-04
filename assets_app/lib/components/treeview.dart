@@ -84,6 +84,7 @@ class TreeView extends StatelessWidget {
     }
 
     return ExpansionTile(
+      shape: const Border(),
       title: Row(
         children: [
           _leadingIcon(resource: node.data),

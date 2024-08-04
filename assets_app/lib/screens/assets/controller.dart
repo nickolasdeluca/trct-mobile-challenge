@@ -1,7 +1,7 @@
 import 'package:assets_app/api/map.dart';
 import 'package:assets_app/api/methods.dart';
 import 'package:assets_app/components/treeview.dart';
-import 'package:assets_app/models/assets.dart';
+import 'package:assets_app/models/resources.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
@@ -21,10 +21,10 @@ Future<bool> getAssets({required String companyId}) async {
   );
 
   if (companyLocations.statusCode == 200) {
-    List<Asset> locations = [];
+    List<Resource> locations = [];
 
     for (Map<String, dynamic> object in companyLocations.data) {
-      locations.add(Asset.fromJson(object));
+      locations.add(Resource.fromJson(object));
     }
 
     fillTree(source: locations, destination: treeData);
@@ -37,10 +37,10 @@ Future<bool> getAssets({required String companyId}) async {
   );
 
   if (companyAssets.statusCode == 200) {
-    List<Asset> assets = [];
+    List<Resource> assets = [];
 
     for (Map<String, dynamic> object in companyAssets.data) {
-      assets.add(Asset.fromJson(object));
+      assets.add(Resource.fromJson(object));
     }
 
     fillTree(source: assets, destination: treeData);

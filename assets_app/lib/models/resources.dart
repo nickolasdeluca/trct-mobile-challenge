@@ -1,4 +1,4 @@
-class Asset {
+class Resource {
   String id;
   String? locationId;
   String name;
@@ -7,7 +7,7 @@ class Asset {
   String? gatewayId;
   String? sensorType;
 
-  Asset({
+  Resource({
     required this.id,
     this.locationId,
     required this.name,
@@ -17,8 +17,8 @@ class Asset {
     this.sensorType,
   });
 
-  factory Asset.fromJson(Map<String, dynamic> data) {
-    Asset asset = Asset(id: data['id'], name: data['name']);
+  factory Resource.fromJson(Map<String, dynamic> data) {
+    Resource asset = Resource(id: data['id'], name: data['name']);
 
     asset.locationId = data['locationId'];
     asset.parentId = data['parentId'];

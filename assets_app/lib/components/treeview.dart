@@ -155,6 +155,7 @@ bool analyzeNode({
 void fillTree({
   required List<Resource> source,
   required List<TreeNode> destination,
+  final int analyzeDepth = 0,
 }) {
   List<Resource> sideList = [];
 
@@ -183,7 +184,10 @@ void fillTree({
     }
   }
 
-  if (sideList.isNotEmpty) {
-    fillTree(source: sideList, destination: destination);
+  if ((sideList.isNotEmpty) && (analyzeDepth < 100)) {
+    fillTree(
+        source: sideList,
+        destination: destination,
+        analyzeDepth: analyzeDepth + 1);
   }
 }

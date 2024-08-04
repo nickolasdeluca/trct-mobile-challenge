@@ -18,7 +18,8 @@ class TreeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      children: data.map((node) => _buildNode(node)).toList(),
+      children:
+          data.map((node) => _buildNode(context: context, node: node)).toList(),
     );
   }
 
@@ -64,14 +65,13 @@ class TreeView extends StatelessWidget {
     return icon;
   }
 
-  Widget _buildNode(TreeNode node) {
+  Widget _buildNode({required BuildContext context, required TreeNode node}) {
     Widget widget;
 
     widget = node.children.isEmpty
         ? ListTile(
             minVerticalPadding: 0,
-            minTileHeight: 5,
-            minLeadingWidth: 0,
+            minTileHeight: 30,
             title: Padding(
               padding: EdgeInsets.only(left: node.depth * 10.0),
               child: Row(
@@ -90,24 +90,34 @@ class TreeView extends StatelessWidget {
               ),
             ),
           )
-        : ExpansionTile(
-            minTileHeight: 0,
-            childrenPadding: EdgeInsets.zero,
-            tilePadding: EdgeInsets.only(left: ((node.depth + 1) * 10.0) + 6),
-            shape: const Border(),
-            title: Row(
-              children: [
-                _leadingIcon(resource: node.data),
-                const VerticalDivider(width: 5),
-                Flexible(
-                  child: Text(
-                    node.data.name,
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
-              ],
+        : Theme(
+            data: Theme.of(context).copyWith(
+              listTileTheme: ListTileTheme.of(context).copyWith(
+                minVerticalPadding: 0,
+                minTileHeight: 30,
+              ),
             ),
-            children: node.children.map((child) => _buildNode(child)).toList(),
+            child: ExpansionTile(
+              shape: const Border(),
+              title: Padding(
+                padding: EdgeInsets.only(left: node.depth * 10.0),
+                child: Row(
+                  children: [
+                    _leadingIcon(resource: node.data),
+                    const VerticalDivider(width: 5),
+                    Flexible(
+                      child: Text(
+                        node.data.name,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              children: node.children
+                  .map((child) => _buildNode(context: context, node: child))
+                  .toList(),
+            ),
           );
 
     return widget;

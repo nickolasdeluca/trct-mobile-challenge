@@ -24,7 +24,10 @@ Future<bool> getAssets({required String companyId}) async {
     List<Resource> locations = [];
 
     for (Map<String, dynamic> object in companyLocations.data) {
-      locations.add(Resource.fromJson(object));
+      locations.add(Resource.fromJson(
+        data: object,
+        type: ResourceType.location,
+      ));
     }
 
     fillTree(source: locations, destination: treeData);
@@ -40,7 +43,10 @@ Future<bool> getAssets({required String companyId}) async {
     List<Resource> assets = [];
 
     for (Map<String, dynamic> object in companyAssets.data) {
-      assets.add(Resource.fromJson(object));
+      assets.add(Resource.fromJson(
+        data: object,
+        type: ResourceType.asset,
+      ));
     }
 
     fillTree(source: assets, destination: treeData);

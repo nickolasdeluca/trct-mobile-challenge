@@ -1,3 +1,4 @@
+import 'package:assets_app/constants/assets.dart';
 import 'package:assets_app/models/resources.dart';
 import 'package:flutter/material.dart';
 
@@ -20,17 +21,81 @@ class TreeView extends StatelessWidget {
     );
   }
 
+  Widget _leadingIcon({required Resource resource}) {
+    bool isComponent = resource.type == ResourceType.asset &&
+        (resource.sensorType == SensorType.energy ||
+            resource.sensorType == SensorType.vibration) &&
+        (resource.status == Status.alert ||
+            resource.status == Status.operating);
+
+    String asset = resource.type == ResourceType.location
+        ? Assets.png.locationIcon
+        : Assets.png.assetIcon;
+
+    if (isComponent) {
+      asset = Assets.png.componentIcon;
+    }
+
+    Image image = Image.asset(asset);
+
+    return SizedBox(width: 24, height: 24, child: image);
+  }
+
+  Widget? _buildTrailing({required Resource resource}) {
+    Icon? icon;
+
+    if (resource.sensorType == SensorType.energy) {
+      icon = const Icon(
+        Icons.bolt,
+        color: Colors.green,
+        size: 22,
+      );
+    }
+
+    if (resource.status == Status.alert) {
+      icon = const Icon(
+        Icons.circle,
+        color: Colors.red,
+        size: 14,
+      );
+    }
+
+    return icon;
+  }
+
   Widget _buildNode(TreeNode node) {
     if (node.children.isEmpty) {
       return ListTile(
-        title: Text(node.data.name),
-        subtitle: Text(node.data.id),
+        title: Row(
+          children: [
+            _leadingIcon(resource: node.data),
+            const VerticalDivider(width: 5),
+            Flexible(
+              child: Text(
+                node.data.name,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+            const VerticalDivider(width: 5),
+            _buildTrailing(resource: node.data) ?? Container(),
+          ],
+        ),
       );
     }
 
     return ExpansionTile(
-      title: Text(node.data.name),
-      subtitle: Text(node.data.id),
+      title: Row(
+        children: [
+          _leadingIcon(resource: node.data),
+          const VerticalDivider(width: 5),
+          Flexible(
+            child: Text(
+              node.data.name,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
       children: node.children.map((child) => _buildNode(child)).toList(),
     );
   }

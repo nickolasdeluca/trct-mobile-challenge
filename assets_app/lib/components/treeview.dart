@@ -134,18 +134,18 @@ void fillTree({
 }) {
   List<Resource> sideList = [];
 
-  for (Resource asset in source) {
+  for (Resource resource in source) {
     bool found = false;
 
-    if (asset.parentId == null && asset.locationId == null) {
-      destination.add(TreeNode(data: asset, children: []));
+    if (resource.parentId == null && resource.locationId == null) {
+      destination.add(TreeNode(data: resource, children: []));
       continue;
     }
 
     for (TreeNode node in destination) {
       found = analyzeNode(
         currentNode: node,
-        asset: asset,
+        asset: resource,
         destination: destination,
       );
 
@@ -155,7 +155,7 @@ void fillTree({
     }
 
     if (!found) {
-      sideList.add(asset);
+      sideList.add(resource);
     }
   }
 

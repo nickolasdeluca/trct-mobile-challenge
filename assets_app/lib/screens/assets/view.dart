@@ -16,6 +16,22 @@ class CompanyAssets extends StatefulWidget {
 }
 
 class _CompanyAssetsState extends State<CompanyAssets> {
+  VoidCallback get filter => () => setState(() {});
+
+  @override
+  void initState() {
+    sensorController.addListener(filter);
+    statusController.addListener(filter);
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    sensorController.removeListener(filter);
+    statusController.removeListener(filter);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +53,7 @@ class _CompanyAssetsState extends State<CompanyAssets> {
                   ),
                   const VerticalDivider(width: 10),
                   ToggleButton(
-                    controller: criticalController,
+                    controller: statusController,
                     icon: Icons.error_outline_outlined,
                     label: 'Crítico',
                   ),

@@ -4,10 +4,16 @@ import 'package:flutter/material.dart';
 
 class TreeNode {
   final Resource data;
+  final TreeNode? parent;
   final List<TreeNode> children;
   final int depth;
 
-  TreeNode({required this.data, this.children = const [], this.depth = 0});
+  TreeNode({
+    required this.data,
+    required this.parent,
+    this.children = const [],
+    this.depth = 0,
+  });
 }
 
 class TreeView extends StatelessWidget {
@@ -128,14 +134,30 @@ bool isParentOrLocationMatch(TreeNode node, Resource asset) {
   return node.data.id == asset.parentId || node.data.id == asset.locationId;
 }
 
+TreeNode? getParent({required TreeNode node}) {
+  TreeNode? parent = node;
+
+  if (node.parent != null) {
+    parent = getParent(node: node.parent!);
+  }
+
+  return parent;
+}
+
 bool analyzeNode({
   required TreeNode currentNode,
   required Resource asset,
   required List<TreeNode> destination,
 }) {
   if (isParentOrLocationMatch(currentNode, asset)) {
-    currentNode.children
-        .add(TreeNode(data: asset, children: [], depth: currentNode.depth + 1));
+    currentNode.children.add(
+      TreeNode(
+        data: asset,
+        parent: currentNode,
+        children: [],
+        depth: currentNode.depth + 1,
+      ),
+    );
     return true;
   }
 
@@ -163,7 +185,7 @@ void fillTree({
     bool found = false;
 
     if (resource.parentId == null && resource.locationId == null) {
-      destination.add(TreeNode(data: resource, children: []));
+      destination.add(TreeNode(data: resource, parent: null, children: []));
       continue;
     }
 

@@ -38,6 +38,10 @@ class _CompanyAssetsState extends State<CompanyAssets> {
 
   @override
   void initState() {
+    searchController = TextEditingController();
+    sensorController = ValueNotifier<bool>(false);
+    statusController = ValueNotifier<bool>(false);
+
     sensorController.addListener(filter);
     statusController.addListener(filter);
     searchController.addListener(_onTextChanged);
@@ -50,6 +54,11 @@ class _CompanyAssetsState extends State<CompanyAssets> {
     sensorController.removeListener(filter);
     statusController.removeListener(filter);
     searchController.removeListener(_onTextChanged);
+
+    searchController.dispose();
+    sensorController.dispose();
+    statusController.dispose();
+
     _debounce?.cancel();
 
     super.dispose();

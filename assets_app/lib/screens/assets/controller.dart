@@ -5,9 +5,9 @@ import 'package:assets_app/models/resources.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
-TextEditingController searchController = TextEditingController();
-ValueNotifier<bool> sensorController = ValueNotifier<bool>(false);
-ValueNotifier<bool> statusController = ValueNotifier<bool>(false);
+late TextEditingController searchController;
+late ValueNotifier<bool> sensorController;
+late ValueNotifier<bool> statusController;
 
 List<TreeNode> treeData = [];
 

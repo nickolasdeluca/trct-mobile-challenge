@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:assets_app/components/appbar.dart';
 import 'package:assets_app/components/buttons.dart';
 import 'package:assets_app/components/inputs.dart';
@@ -16,12 +18,30 @@ class CompanyAssets extends StatefulWidget {
 }
 
 class _CompanyAssetsState extends State<CompanyAssets> {
-  VoidCallback get filter => () => setState(() {});
+  Timer? _debounce;
+
+  VoidCallback get filter => () {
+        if (_debounce?.isActive ?? false) {
+          _debounce?.cancel();
+        }
+
+        setState(() {});
+      };
+
+  void _onTextChanged() {
+    if (_debounce?.isActive ?? false) {
+      _debounce?.cancel();
+    }
+
+    _debounce = Timer(const Duration(seconds: 2), () => setState(() {}));
+  }
 
   @override
   void initState() {
     sensorController.addListener(filter);
     statusController.addListener(filter);
+    searchController.addListener(_onTextChanged);
+
     super.initState();
   }
 
@@ -29,6 +49,9 @@ class _CompanyAssetsState extends State<CompanyAssets> {
   void dispose() {
     sensorController.removeListener(filter);
     statusController.removeListener(filter);
+    searchController.removeListener(_onTextChanged);
+    _debounce?.cancel();
+
     super.dispose();
   }
 

@@ -12,7 +12,7 @@ Widget _title({String? title}) {
           ),
         )
       : SvgPicture.asset(
-          Assets.tractianLogo,
+          Assets.svg.tractianLogo,
           height: 20,
           colorFilter: const ColorFilter.mode(
             Colors.white,

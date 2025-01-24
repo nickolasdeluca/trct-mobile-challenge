@@ -7,11 +7,13 @@ class ToggleButton extends StatefulWidget {
     required this.icon,
     required this.label,
     required this.controller,
+    this.onPressed,
   });
 
   final IconData icon;
   final String label;
   final ValueNotifier<bool> controller;
+  final VoidCallback? onPressed;
 
   @override
   State<ToggleButton> createState() => _ToggleButtonState();
@@ -32,6 +34,8 @@ class _ToggleButtonState extends State<ToggleButton> {
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: () {
+        widget.onPressed?.call();
+
         setState(() {
           _controller.value = !_controller.value;
         });

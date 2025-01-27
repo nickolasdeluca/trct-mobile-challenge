@@ -1,10 +1,7 @@
-import 'dart:async';
-
 import 'package:assets_app/components/appbar.dart';
 import 'package:assets_app/components/buttons.dart';
 import 'package:assets_app/components/inputs.dart';
-import 'package:assets_app/components/treeview.dart';
-import 'package:assets_app/constants/assets.dart';
+import 'package:assets_app/components/lazy_tree_view.dart';
 import 'package:assets_app/models/companies.dart';
 import 'package:assets_app/screens/assets/controller.dart';
 import 'package:flutter/material.dart';
@@ -71,7 +68,7 @@ class _CompanyAssetsState extends State<CompanyAssets> {
               const Divider(),
               Expanded(
                 child: ValueListenableBuilder(
-                  builder: (context, value, child) => TreeView(
+                  builder: (context, value, child) => LazyTreeView(
                     data: controller.presentable.value,
                   ),
                   valueListenable: controller.presentable,

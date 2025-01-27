@@ -2,10 +2,20 @@ import 'dart:async';
 
 import 'package:assets_app/api/map.dart';
 import 'package:assets_app/api/methods.dart';
-import 'package:assets_app/components/treeview.dart';
+import 'package:assets_app/components/lazy_tree_view.dart';
 import 'package:assets_app/models/resources.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+
+TreeNode? getParent({required TreeNode node}) {
+  TreeNode? parent = node;
+
+  if (node.parent != null) {
+    parent = getParent(node: node.parent!);
+  }
+
+  return parent;
+}
 
 class AssetsController {
   late TextEditingController searchController;
@@ -130,6 +140,90 @@ class AssetsController {
     }
 
     return;
+  }
+
+  bool isParentOrLocationMatch(TreeNode node, Resource asset) {
+    return node.data.id == asset.parentId || node.data.id == asset.locationId;
+  }
+
+  TreeNode? getParent({required TreeNode node}) {
+    TreeNode? parent = node;
+
+    if (node.parent != null) {
+      parent = getParent(node: node.parent!);
+    }
+
+    return parent;
+  }
+
+  bool analyzeNode({
+    required TreeNode currentNode,
+    required Resource asset,
+    required List<TreeNode> destination,
+  }) {
+    if (isParentOrLocationMatch(currentNode, asset)) {
+      currentNode.children.add(
+        TreeNode(
+          data: asset,
+          parent: currentNode,
+          children: [],
+          depth: currentNode.depth + 1,
+        ),
+      );
+      return true;
+    }
+
+    for (TreeNode child in currentNode.children) {
+      if (analyzeNode(
+        currentNode: child,
+        asset: asset,
+        destination: destination,
+      )) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  void fillTree({
+    required List<Resource> source,
+    required List<TreeNode> destination,
+    final int analyzeDepth = 0,
+  }) {
+    List<Resource> sideList = [];
+
+    for (Resource resource in source) {
+      bool found = false;
+
+      if (resource.parentId == null && resource.locationId == null) {
+        destination.add(TreeNode(data: resource, parent: null, children: []));
+        continue;
+      }
+
+      for (TreeNode node in destination) {
+        found = analyzeNode(
+          currentNode: node,
+          asset: resource,
+          destination: destination,
+        );
+
+        if (found) {
+          break;
+        }
+      }
+
+      if (!found) {
+        sideList.add(resource);
+      }
+    }
+
+    if ((sideList.isNotEmpty) && (analyzeDepth < 100)) {
+      fillTree(
+          source: sideList,
+          destination: destination,
+          analyzeDepth: analyzeDepth + 1);
+    }
   }
 
   Future<bool> getAssets({required String companyId}) async {

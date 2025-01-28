@@ -1,21 +1,8 @@
+import 'package:assets_app/components/tree_view/tree_node.dart';
 import 'package:assets_app/constants/assets.dart';
 import 'package:assets_app/models/resources.dart';
 import 'package:flutter/material.dart';
 import 'dart:collection';
-
-class TreeNode {
-  final Resource data;
-  TreeNode? parent;
-  final List<TreeNode> children;
-  int depth;
-
-  TreeNode({
-    required this.data,
-    required this.parent,
-    this.children = const [],
-    this.depth = 0,
-  });
-}
 
 class LazyTreeView extends StatefulWidget {
   const LazyTreeView({
@@ -66,9 +53,7 @@ class _LazyTreeViewState extends State<LazyTreeView> {
   SliverList _buildTreeSliver(List<TreeNode> nodes) {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
-        (BuildContext context, int index) {
-          return _buildNode(context, nodes[index]);
-        },
+        (BuildContext context, int index) => _buildNode(context, nodes[index]),
         childCount: nodes.length,
       ),
     );

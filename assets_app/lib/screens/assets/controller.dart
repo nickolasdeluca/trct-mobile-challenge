@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:assets_app/api/map.dart';
 import 'package:assets_app/api/methods.dart';
-import 'package:assets_app/components/lazy_tree_view.dart';
+import 'package:assets_app/components/tree_view/tree_node.dart';
 import 'package:assets_app/helpers/debouncer.dart';
 import 'package:assets_app/models/resources.dart';
 import 'package:dio/dio.dart';

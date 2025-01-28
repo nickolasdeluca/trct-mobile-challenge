@@ -5,9 +5,9 @@ import 'dart:collection';
 
 class TreeNode {
   final Resource data;
-  final TreeNode? parent;
+  TreeNode? parent;
   final List<TreeNode> children;
-  final int depth;
+  int depth;
 
   TreeNode({
     required this.data,
@@ -20,10 +20,10 @@ class TreeNode {
 class LazyTreeView extends StatefulWidget {
   const LazyTreeView({
     super.key,
-    required this.data,
+    this.data,
   });
 
-  final List<TreeNode> data;
+  final List<TreeNode>? data;
 
   @override
   State<LazyTreeView> createState() => _LazyTreeViewState();
@@ -34,9 +34,31 @@ class _LazyTreeViewState extends State<LazyTreeView> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.data == null) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator.adaptive(),
+            Divider(color: Colors.transparent),
+            Text('Buscando dados no servidor...'),
+          ],
+        ),
+      );
+    }
+
+    if (widget.data!.isEmpty) {
+      return const Center(
+        child: Text(
+          "Nenhum ativo encontrado." "\n\n" "Tente refinar sua busca.",
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
     return CustomScrollView(
       slivers: [
-        _buildTreeSliver(widget.data),
+        _buildTreeSliver(widget.data!),
       ],
     );
   }

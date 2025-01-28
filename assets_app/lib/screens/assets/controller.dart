@@ -3,36 +3,29 @@ import 'dart:async';
 import 'package:assets_app/api/map.dart';
 import 'package:assets_app/api/methods.dart';
 import 'package:assets_app/components/lazy_tree_view.dart';
+import 'package:assets_app/helpers/debouncer.dart';
 import 'package:assets_app/models/resources.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-
-TreeNode? getParent({required TreeNode node}) {
-  TreeNode? parent = node;
-
-  if (node.parent != null) {
-    parent = getParent(node: node.parent!);
-  }
-
-  return parent;
-}
 
 class AssetsController {
   late TextEditingController searchController;
   late ValueNotifier<bool> sensorController;
   late ValueNotifier<bool> statusController;
-  Timer? _debounce;
+  final Debouncer debouncer = Debouncer(milliseconds: 500);
   List<TreeNode> treeData = [];
-  ValueNotifier<List<TreeNode>> presentable = ValueNotifier([]);
+  ValueNotifier<List<TreeNode>?> presentable = ValueNotifier(null);
+  String _currentSearchFilterCriteria = '';
 
   init({required String companyId}) {
     searchController = TextEditingController();
-    sensorController = ValueNotifier<bool>(false);
-    statusController = ValueNotifier<bool>(false);
-
-    sensorController.addListener(filter);
-    statusController.addListener(filter);
     searchController.addListener(_onTextChanged);
+
+    sensorController = ValueNotifier<bool>(false);
+    sensorController.addListener(_sensorListener);
+
+    statusController = ValueNotifier<bool>(false);
+    statusController.addListener(_statusListener);
 
     getAssets(companyId: companyId);
   }
@@ -40,49 +33,46 @@ class AssetsController {
   Function()? updateViewCallBack;
 
   dispose() {
-    sensorController.removeListener(filter);
-    statusController.removeListener(filter);
     searchController.removeListener(_onTextChanged);
-
     searchController.dispose();
+
+    sensorController.removeListener(_sensorListener);
     sensorController.dispose();
+
+    statusController.removeListener(_statusListener);
     statusController.dispose();
 
-    _debounce?.cancel();
+    debouncer.dispose();
   }
-
-  VoidCallback get filter => () {
-        if (_debounce?.isActive ?? false) {
-          _debounce?.cancel();
-        }
-
-        doFilter();
-      };
 
   void _onTextChanged() {
-    if (_debounce?.isActive ?? false) {
-      _debounce?.cancel();
+    if (searchController.text != _currentSearchFilterCriteria) {
+      _currentSearchFilterCriteria = searchController.text;
+      debouncer.run(doFilter);
     }
-
-    _debounce = Timer(const Duration(seconds: 2), () => doFilter());
   }
 
-  TreeNode? filterProc(
-      {required TreeNode node, required bool shouldCheckParent}) {
+  void _statusListener() => debouncer.run(doFilter);
+  void _sensorListener() => debouncer.run(doFilter);
+
+  TreeNode? filterProc({
+    required TreeNode node,
+    required bool shouldCheckParent,
+  }) {
     bool match = true;
     TreeNode? resultingNode;
 
-    if (searchController.text.isNotEmpty) {
+    if (match && searchController.text.isNotEmpty) {
       match = node.data.name.toLowerCase().contains(
             searchController.text.toLowerCase(),
           );
     }
 
-    if (sensorController.value) {
+    if (match && sensorController.value) {
       match = node.data.sensorType == SensorType.energy;
     }
 
-    if (statusController.value) {
+    if (match && statusController.value) {
       match = node.data.status == Status.alert;
     }
 
@@ -149,8 +139,8 @@ class AssetsController {
   TreeNode? getParent({required TreeNode node}) {
     TreeNode? parent = node;
 
-    if (node.parent != null) {
-      parent = getParent(node: node.parent!);
+    while (parent?.parent != null) {
+      parent = parent?.parent;
     }
 
     return parent;
@@ -228,6 +218,8 @@ class AssetsController {
 
   Future<bool> getAssets({required String companyId}) async {
     treeData.clear();
+
+    await Future.delayed(Duration(seconds: 1));
 
     Api api = Api();
 

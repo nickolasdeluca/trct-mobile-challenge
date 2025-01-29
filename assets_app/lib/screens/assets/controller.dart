@@ -48,21 +48,22 @@ class AssetsController {
   void _onTextChanged() {
     if (searchController.text != _currentSearchFilterCriteria) {
       _currentSearchFilterCriteria = searchController.text;
-      debouncer.run(doFilter);
+
+      debouncer.run(applyFilter);
     }
   }
 
-  void _statusListener() => debouncer.run(doFilter);
-  void _sensorListener() => debouncer.run(doFilter);
+  void _statusListener() => debouncer.run(applyFilter);
+  void _sensorListener() => debouncer.run(applyFilter);
 
-  TreeNode? filterProc({
+  TreeNode? _filter({
     required TreeNode node,
     required bool shouldCheckParent,
   }) {
     bool match = true;
-    TreeNode? resultingNode;
 
-    if (match && searchController.text.isNotEmpty) {
+    // Apply filters
+    if (searchController.text.isNotEmpty) {
       match = node.data.name.toLowerCase().contains(
             searchController.text.toLowerCase(),
           );
@@ -76,51 +77,44 @@ class AssetsController {
       match = node.data.status == Status.alert;
     }
 
-    if (match) {
-      resultingNode = node;
-    }
+    // If the node matches, return it
+    if (match) return node;
 
-    if (((node.parent != null) && ((shouldCheckParent) || (match)))) {
-      resultingNode = getParent(node: node);
-    }
+    // Check children recursively
+    for (TreeNode child in node.children) {
+      TreeNode? result = _filter(node: child, shouldCheckParent: false);
 
-    if ((!match) && (node.children.isNotEmpty)) {
-      for (TreeNode child in node.children) {
-        resultingNode = filterProc(
-          node: child,
-          shouldCheckParent: false,
-        );
-
-        if (resultingNode != null) {
-          break;
-        }
+      if (result != null) {
+        // If a child matches, include the parent branch
+        return node;
       }
     }
 
-    return resultingNode;
+    // If the node has a parent and should be included, return the parent branch
+    if (shouldCheckParent && node.parent != null) {
+      return getParent(node: node);
+    }
+
+    return null;
   }
 
-  Future<void> doFilter() async {
+  Future<void> applyFilter() async {
+    final Set<String> seenIds = {}; // Track unique nodes
     List<TreeNode> filteredData = [];
 
     if (searchController.text.isNotEmpty ||
         sensorController.value ||
         statusController.value) {
       for (TreeNode node in treeData) {
-        TreeNode? result = filterProc(node: node, shouldCheckParent: true);
+        TreeNode? result = _filter(node: node, shouldCheckParent: true);
 
-        if (result != null) {
-          bool alreadyExists = false;
-
-          for (TreeNode node in filteredData) {
-            if (node.data.id == result.data.id) {
-              alreadyExists = true;
-            }
-          }
-
-          if (!alreadyExists) {
+        // Include the parent branch if a child matches
+        while (result != null) {
+          if (seenIds.add(result.data.id)) {
             filteredData.add(result);
           }
+
+          result = result.parent;
         }
       }
 
@@ -128,12 +122,6 @@ class AssetsController {
     } else {
       presentable.value = treeData;
     }
-
-    return;
-  }
-
-  bool isParentOrLocationMatch(TreeNode node, Resource asset) {
-    return node.data.id == asset.parentId || node.data.id == asset.locationId;
   }
 
   TreeNode? getParent({required TreeNode node}) {
@@ -146,73 +134,135 @@ class AssetsController {
     return parent;
   }
 
-  bool analyzeNode({
-    required TreeNode currentNode,
-    required Resource asset,
-    required List<TreeNode> destination,
-  }) {
-    if (isParentOrLocationMatch(currentNode, asset)) {
-      currentNode.children.add(
-        TreeNode(
-          data: asset,
-          parent: currentNode,
-          children: [],
-          depth: currentNode.depth + 1,
-        ),
-      );
-      return true;
-    }
-
-    for (TreeNode child in currentNode.children) {
-      if (analyzeNode(
-        currentNode: child,
-        asset: asset,
-        destination: destination,
-      )) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
   void fillTree({
-    required List<Resource> source,
+    /// List of location resources
+    required List<Resource> locations,
+
+    /// List of asset resources
+    required List<Resource> assets,
+
+    /// Destination list to store the root nodes of the tree
     required List<TreeNode> destination,
-    final int analyzeDepth = 0,
   }) {
-    List<Resource> sideList = [];
+    // Map to store all nodes by their ID
+    final Map<String, TreeNode> nodes = {};
+    // Map to store children nodes that are waiting for their parent to be created
+    final Map<String, List<TreeNode>> pendingChildren = {};
 
-    for (Resource resource in source) {
-      bool found = false;
+    // Map to store asset nodes that are waiting for their location to be created
+    final Map<String, List<TreeNode>> pendingAssets = {};
 
-      if (resource.parentId == null && resource.locationId == null) {
-        destination.add(TreeNode(data: resource, parent: null, children: []));
-        continue;
+    // Process each location resource
+    for (final location in locations) {
+      final node = TreeNode(
+        data: location,
+        parent: null,
+        children: [],
+        depth: 0,
+      );
+
+      nodes[location.id] = node;
+
+      if (location.parentId != null) {
+        // Add the node to its parent's children list
+        if (nodes.containsKey(location.parentId)) {
+          final parent = nodes[location.parentId]!;
+
+          parent.children.add(node);
+
+          node.parent = parent;
+          node.depth = parent.depth + 1;
+        } else {
+          // Add the node to pendingChildren if the parent is not yet created
+          pendingChildren.putIfAbsent(location.parentId!, () => []).add(node);
+        }
+      } else {
+        // Add the node to the destination if it has no parent
+        destination.add(node);
       }
 
-      for (TreeNode node in destination) {
-        found = analyzeNode(
-          currentNode: node,
-          asset: resource,
-          destination: destination,
-        );
+      // Add pending children to the node
+      if (pendingChildren.containsKey(location.id)) {
+        for (final child in pendingChildren.remove(location.id)!) {
+          node.children.add(child);
 
-        if (found) {
-          break;
+          child.parent = node;
+          child.depth = node.depth + 1;
         }
       }
+    }
 
-      if (!found) {
-        sideList.add(resource);
+    // Process each asset resource
+    for (final asset in assets) {
+      final node = TreeNode(
+        data: asset,
+        parent: null,
+        children: [],
+        depth: 0,
+      );
+
+      nodes[asset.id] = node;
+
+      if (asset.parentId != null) {
+        // Add the node to its parent's children list
+        if (nodes.containsKey(asset.parentId)) {
+          final parent = nodes[asset.parentId]!;
+
+          parent.children.add(node);
+
+          node.parent = parent;
+          node.depth = parent.depth + 1;
+        } else {
+          // Add the node to pendingChildren if the parent is not yet created
+          pendingChildren.putIfAbsent(asset.parentId!, () => []).add(node);
+        }
+      } else if (asset.locationId != null) {
+        // Add the node to its location's children list
+        if (nodes.containsKey(asset.locationId)) {
+          final locationNode = nodes[asset.locationId]!;
+
+          locationNode.children.add(node);
+
+          node.parent = locationNode;
+          node.depth = locationNode.depth + 1;
+        } else {
+          // Add the node to pendingAssets if the location is not yet created
+          pendingAssets.putIfAbsent(asset.locationId!, () => []).add(node);
+        }
+      } else {
+        // Add the node to the destination if it has no parent or location
+        destination.add(node);
+      }
+
+      // Add pending children to the node
+      if (pendingChildren.containsKey(asset.id)) {
+        for (final child in pendingChildren.remove(asset.id)!) {
+          node.children.add(child);
+
+          child.parent = node;
+          child.depth = node.depth + 1;
+        }
       }
     }
 
-    if ((sideList.isNotEmpty) && (analyzeDepth < 100)) {
-      fillTree(
-          source: sideList,
-          destination: destination,
-          analyzeDepth: analyzeDepth + 1);
+    // Process pending assets that are waiting for their location to be created
+    for (final locationId in pendingAssets.keys) {
+      if (nodes.containsKey(locationId)) {
+        final locationNode = nodes[locationId]!;
+
+        // Add the asset to its location's children list
+        for (final asset in pendingAssets.remove(locationId)!) {
+          locationNode.children.add(asset);
+
+          asset.parent = locationNode;
+          asset.depth = locationNode.depth + 1;
+        }
+      } else {
+        // Add the asset to the destination if its location is not created
+        for (final asset in pendingAssets[locationId]!) {
+          destination.add(asset);
+        }
+      }
     }
   }
 
@@ -227,9 +277,9 @@ class AssetsController {
       route: ApiMap.locationsByCompanyId(companyId: companyId),
     );
 
-    if (companyLocations.statusCode == 200) {
-      List<Resource> locations = [];
+    List<Resource> locations = [];
 
+    if (companyLocations.statusCode == 200) {
       for (Map<String, dynamic> data in companyLocations.data) {
         Resource location = Resource.fromJson(
           data: data,
@@ -238,19 +288,15 @@ class AssetsController {
 
         locations.add(location);
       }
-
-      fillTree(source: locations, destination: treeData);
-
-      locations.clear();
     }
 
     Response companyAssets = await api.sendGet(
       route: ApiMap.assetsByCompanyId(companyId: companyId),
     );
 
-    if (companyAssets.statusCode == 200) {
-      List<Resource> assets = [];
+    List<Resource> assets = [];
 
+    if (companyAssets.statusCode == 200) {
       for (Map<String, dynamic> object in companyAssets.data) {
         Resource asset = Resource.fromJson(
           data: object,
@@ -259,12 +305,15 @@ class AssetsController {
 
         assets.add(asset);
       }
-
-      fillTree(source: assets, destination: treeData);
-
-      assets.clear();
     }
 
+    // Fill the tree with the locations and assets
+    fillTree(locations: locations, assets: assets, destination: treeData);
+
+    locations.clear();
+    assets.clear();
+
+    // Create a clone of the tree data to avoid modifying the original list
     presentable.value = treeData;
 
     return true;
